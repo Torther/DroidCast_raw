@@ -212,7 +212,7 @@ public class Main {
             resolver.onResolveDimension(width, height, screenRotation);
         }
 
-        Bitmap softBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Bitmap softBitmap = bitmap.copy(Bitmap.Config.RGB_565, true);
 
         ByteBuffer buffer = ByteBuffer.allocate(softBitmap.getByteCount());
         softBitmap.copyPixelsToBuffer(buffer);

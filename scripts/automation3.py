@@ -49,7 +49,7 @@ def run_adb(args, pipeOutput=True):
 def locate_apk_path():
     (rc, out, _) = run_adb(["shell", "pm",
                             "path",
-                            "com.rayworks.droidcast"])
+                            "com.torther.droidcasts"])
     if rc or out == "":
         raise RuntimeError(
             "Locating apk failure, have you installed the app successfully?")
@@ -126,7 +126,7 @@ def automate():
                 class_path,
                 "app_process",
                 "/",  # unused
-                "com.rayworks.droidcast.Main",
+                "com.torther.droidcasts.Main",
                 "--port=%d" % args_in.port]
 
         # delay opening the web page
