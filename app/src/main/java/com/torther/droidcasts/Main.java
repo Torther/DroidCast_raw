@@ -9,7 +9,6 @@ import android.os.Process;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import android.text.TextUtils;
@@ -36,40 +35,33 @@ import java.util.Locale;
  */
 public class Main {
     private static final String sTAG = Main.class.getName();
-
-    private static final String IMAGE_BMP = "image/bmp";
     private static final String WIDTH = "width";
     private static final String HEIGHT = "height";
-    private static final int SCREENSHOT_DELAY_MILLIS = 1500;
+    private static final int SCREENSHOT_DELAY_MILLIS = 1000;
 
     private static int width = 0;
     private static int height = 0;
-
     private static int port = 53516;
 
     private static DisplayUtil displayUtil;
     private static Handler handler;
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static void main(String[] args) {
+        // Get args and set port.
         resolveArgs(args);
 
-        AsyncHttpServer httpServer =
-                new AsyncHttpServer() {
-                    @Override
-                    protected boolean onRequest(
-                            AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
-                        return super.onRequest(request, response);
-                    }
-                };
+        AsyncHttpServer httpServer = new AsyncHttpServer() {
+            @Override
+            protected boolean onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
+                return super.onRequest(request, response);
+            }
+        };
 
         Looper.prepare();
-
         Looper looper = Looper.myLooper();
         System.out.println(">>> DroidCast main entry");
 
         handler = new Handler(looper);
-
         displayUtil = new DisplayUtil();
 
         AsyncServer server = new AsyncServer();
@@ -78,33 +70,31 @@ public class Main {
         httpServer.websocket(
                 "/src",
                 (webSocket, request) -> {
-
                     Pair<Integer, Integer> pair = getDimension();
                     displayUtil.setRotateListener(
                             rotate -> {
                                 System.out.println(">>> rotate to " + rotate);
-
                                 // delay for the new rotated screen
-                                handler.postDelayed(
-                                        () -> {
-                                            Pair<Integer, Integer> dimen = getDimension();
-                                            sendScreenshotData(webSocket, dimen.first, dimen.second);
+                                handler.postDelayed(() -> {
+                                            Pair<Integer, Integer> dimension = getDimension();
+                                            sendScreenshotData(webSocket, dimension.first, dimension.second);
                                         },
                                         SCREENSHOT_DELAY_MILLIS);
                             });
-
                     sendScreenshotData(webSocket, pair.first, pair.second);
                 });
 
         httpServer.listen(server, port);
-
         Looper.loop();
     }
 
+    /**
+     * @param args String[]
+     *             e.g ["--port=53516"]
+     */
     private static void resolveArgs(String[] args) {
         if (args.length > 0) {
             String[] params = args[0].split("=");
-
             if ("--port".equals(params[0])) {
                 try {
                     port = Integer.parseInt(params[1]);
@@ -116,12 +106,15 @@ public class Main {
         }
     }
 
+    /**
+     * @return Dimension Pair<>(width, height)
+     */
     @NonNull
     private static Pair<Integer, Integer> getDimension() {
         Point displaySize = displayUtil.getCurrentDisplaySize();
 
-        int width = 1080;
-        int height = 1920;
+        int width = 720;
+        int height = 1280;
         if (displaySize != null) {
             width = displaySize.x;
             height = displaySize.y;
@@ -129,7 +122,11 @@ public class Main {
         return new Pair<>(width, height);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    /**
+     * @param webSocket WebSocket
+     * @param width     width
+     * @param height    height
+     */
     private static void sendScreenshotData(WebSocket webSocket, int width, int height) {
         try {
             byte[] inBytes =
@@ -155,15 +152,18 @@ public class Main {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    /**
+     * @param destWidth  width
+     * @param destHeight height
+     * @param resolver   Nullable
+     * @return buffer.array()
+     */
     private static byte[] getScreenImageInBytes(
-            int w,
-            int h,
+            int destWidth,
+            int destHeight,
             @Nullable ImageDimensionListener resolver)
             throws IOException {
 
-        int destWidth = w;
-        int destHeight = h;
         Bitmap bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight);
 
         if (bitmap == null) {
@@ -208,20 +208,14 @@ public class Main {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         System.out.println("Bitmap final dimens : " + width + "|" + height);
+
         if (resolver != null) {
             resolver.onResolveDimension(width, height, screenRotation);
         }
 
-        Bitmap softBitmap = bitmap.copy(Bitmap.Config.RGB_565, true);
-
-        ByteBuffer buffer = ByteBuffer.allocate(softBitmap.getByteCount());
-        softBitmap.copyPixelsToBuffer(buffer);
-
-
-        // "Make sure to call Bitmap.recycle() as soon as possible, once its content is not
-        // needed anymore."
+        ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
+        (bitmap.copy(Bitmap.Config.RGB_565, true)).copyPixelsToBuffer(buffer);
         bitmap.recycle();
-        softBitmap.recycle();
 
         return buffer.array();
     }
@@ -231,7 +225,6 @@ public class Main {
     }
 
     static class AnyRequestCallback implements HttpServerRequestCallback {
-        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         @Override
         public void onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
             try {
@@ -264,11 +257,9 @@ public class Main {
 
                 byte[] bytes = getScreenImageInBytes(destWidth, destHeight, null);
 
-                response.send(IMAGE_BMP, bytes);
-                response.send("application/octet-stream",bytes);
+                response.send("application/octet-stream", bytes);
             } catch (Exception e) {
                 e.printStackTrace();
-
                 response.code(500);
                 String template = ":(  Failed to generate the screenshot on device / emulator : %s - %s - Android OS : %s";
                 String error = String.format(Locale.ENGLISH, template, Build.MANUFACTURER, Build.DEVICE, Build.VERSION.RELEASE);
