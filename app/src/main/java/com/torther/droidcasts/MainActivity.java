@@ -26,7 +26,5 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent service = new Intent(MainActivity.this, DroidCastSService.class);
-        MainActivity.this.startService(service);
     }
 }

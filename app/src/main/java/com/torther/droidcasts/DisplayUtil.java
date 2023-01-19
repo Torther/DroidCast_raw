@@ -5,9 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
-import android.os.Build;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.view.Display;
 import android.view.IRotationWatcher;
 import android.view.IWindowManager;
@@ -21,7 +19,7 @@ import java.lang.reflect.Method;
 
     @SuppressLint("PrivateApi")
     public DisplayUtil() {
-        Class<?> serviceManagerClass = null;
+        Class<?> serviceManagerClass;
 
         try {
             serviceManagerClass = Class.forName("android.os.ServiceManager");
@@ -48,20 +46,7 @@ import java.lang.reflect.Method;
             Point localPoint = new Point();
 
             // Resolve the screen resolution for devices with OS version 4.3+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                iWindowManager.getInitialDisplaySize(0, localPoint);
-            } else {
-                // void getDisplaySize(out Point size)
-                Point out = new Point();
-
-                iWindowManager
-                        .getClass()
-                        .getMethod("getDisplaySize", Point.class)
-                        .invoke(iWindowManager, out);
-                if (out.x > 0 && out.y > 0) {
-                    localPoint = out;
-                }
-            }
+            iWindowManager.getInitialDisplaySize(0, localPoint);
 
             System.out.println(">>> Dimension: " + localPoint);
             return localPoint;
@@ -72,12 +57,6 @@ import java.lang.reflect.Method;
         return null;
     }
 
-    /**
-     * Retrieve the current orientation of the primary screen.
-     *
-     * @return Constant as per {@link android.view.Surface.Rotation}.
-     * @see android.view.Display#DEFAULT_DISPLAY
-     */
     int getScreenRotation() {
         int rotation = 0;
 
@@ -104,7 +83,7 @@ import java.lang.reflect.Method;
             IRotationWatcher watcher =
                     new IRotationWatcher.Stub() {
                         @Override
-                        public void onRotationChanged(int rotation) throws RemoteException {
+                        public void onRotationChanged(int rotation) {
                             if (listener != null) {
                                 listener.onRotate(rotation);
                             }

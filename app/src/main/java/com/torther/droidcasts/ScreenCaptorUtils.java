@@ -8,8 +8,6 @@ import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.IBinder;
 
-import androidx.annotation.RequiresApi;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -41,7 +39,6 @@ public final class ScreenCaptorUtils {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static Bitmap screenshot(int w, int h) {
         Bitmap bitmap = null;
 
@@ -53,8 +50,8 @@ public final class ScreenCaptorUtils {
                 // create the DisplayCaptureArgs object by DisplayCaptureArgs$Builder.build()
                 Class<?> argsClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs");
                 Class<?> innerClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs$Builder");
-                Method setSzMethod = innerClass.getDeclaredMethod("setSize", int.class, int.class);
-                Method buildMethod = innerClass.getDeclaredMethod("build");
+                @SuppressLint("BlockedPrivateApi") Method setSzMethod = innerClass.getDeclaredMethod("setSize", int.class, int.class);
+                @SuppressLint("BlockedPrivateApi") Method buildMethod = innerClass.getDeclaredMethod("build");
 
                 Constructor<?> ctor = innerClass.getDeclaredConstructor(IBinder.class);
                 Object builder = ctor.newInstance(getBuiltInDisplay());
@@ -65,6 +62,7 @@ public final class ScreenCaptorUtils {
                 Method captureDisplay = clazz.getDeclaredMethod("captureDisplay", argsClass);
                 Object hdBuffer = captureDisplay.invoke(null, args);
 
+                assert hdBuffer != null;
                 Class<?> hdBufferClass = hdBuffer.getClass();
                 ColorSpace colorSpace = (ColorSpace) hdBufferClass.getDeclaredMethod("getColorSpace").invoke(hdBuffer);
                 HardwareBuffer hardwareBuffer = (HardwareBuffer) hdBufferClass.getDeclaredMethod("getHardwareBuffer").invoke(hdBuffer);
@@ -88,11 +86,8 @@ public final class ScreenCaptorUtils {
 
             if (bitmap != null) System.out.println(">>> bmp generated.");
 
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException e) {
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException |
+                 ClassNotFoundException | InstantiationException e) {
             e.printStackTrace();
         }
 
@@ -110,7 +105,6 @@ public final class ScreenCaptorUtils {
         return getBuiltInDisplayMethod;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static IBinder getBuiltInDisplay() {
 
         try {

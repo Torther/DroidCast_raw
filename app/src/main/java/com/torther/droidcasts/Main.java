@@ -36,10 +36,9 @@ import java.util.Locale;
 public class Main {
     private static final String sTAG = Main.class.getName();
 
-    private static final String IMAGE_BMP = "image/bmp";
     private static final String WIDTH = "width";
     private static final String HEIGHT = "height";
-    private static final int SCREENSHOT_DELAY_MILLIS = 1500;
+    private static final int SCREENSHOT_DELAY_MILLIS = 1000;
 
     private static int width = 0;
     private static int height = 0;
@@ -204,20 +203,14 @@ public class Main {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         System.out.println("Bitmap final dimens : " + width + "|" + height);
+
         if (resolver != null) {
             resolver.onResolveDimension(width, height, screenRotation);
         }
 
-        Bitmap softBitmap = bitmap.copy(Bitmap.Config.RGB_565, true);
-
-        ByteBuffer buffer = ByteBuffer.allocate(softBitmap.getByteCount());
-        softBitmap.copyPixelsToBuffer(buffer);
-
-
-        // "Make sure to call Bitmap.recycle() as soon as possible, once its content is not
-        // needed anymore."
+        ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
+        bitmap.copy(Bitmap.Config.RGB_565, true).copyPixelsToBuffer(buffer);
         bitmap.recycle();
-        softBitmap.recycle();
 
         return buffer.array();
     }
@@ -242,7 +235,6 @@ public class Main {
                 }
 
                 if (Main.width == 0 || Main.height == 0) {
-                    // dimension initialization
                     Point point = displayUtil.getCurrentDisplaySize();
 
                     if (point != null && point.x > 0 && point.y > 0) {
@@ -259,11 +251,9 @@ public class Main {
 
                 byte[] bytes = getScreenImageInBytes(destWidth, destHeight, null);
 
-                response.send(IMAGE_BMP, bytes);
-                response.send("application/octet-stream",bytes);
+                response.send("binary/octet-stream", bytes);
             } catch (Exception e) {
                 e.printStackTrace();
-
                 response.code(500);
                 String template = ":(  Failed to generate the screenshot on device / emulator : %s - %s - Android OS : %s";
                 String error = String.format(Locale.ENGLISH, template, Build.MANUFACTURER, Build.DEVICE, Build.VERSION.RELEASE);
