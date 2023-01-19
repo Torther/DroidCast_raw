@@ -9,7 +9,6 @@ import android.os.Process;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import android.text.TextUtils;
@@ -50,7 +49,6 @@ public class Main {
     private static DisplayUtil displayUtil;
     private static Handler handler;
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public static void main(String[] args) {
         resolveArgs(args);
 
@@ -129,7 +127,6 @@ public class Main {
         return new Pair<>(width, height);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private static void sendScreenshotData(WebSocket webSocket, int width, int height) {
         try {
             byte[] inBytes =
@@ -155,7 +152,6 @@ public class Main {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private static byte[] getScreenImageInBytes(
             int w,
             int h,
@@ -231,7 +227,6 @@ public class Main {
     }
 
     static class AnyRequestCallback implements HttpServerRequestCallback {
-        @RequiresApi(api = Build.VERSION_CODES.KITKAT)
         @Override
         public void onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
             try {

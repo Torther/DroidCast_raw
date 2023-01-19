@@ -1,26 +1,32 @@
 package com.torther.droidcasts;
 
-import android.content.pm.ApplicationInfo;
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        /***
-         * https://developer.android.google.cn/about/versions/oreo/android-8.0-changes.html
-         * #security-all
-         */
-        ApplicationInfo info = getApplicationInfo();
-        String srcLocation = info.sourceDir;
+        Intent service = new Intent(MainActivity.this, DroidCastSService.class);
+        MainActivity.this.startService(service);
+    }
 
-        TextView textView = findViewById(R.id.text);
-        textView.setText(TextUtils.Companion.format("Source apk Dir:", srcLocation));
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Intent service = new Intent(MainActivity.this, DroidCastSService.class);
+        MainActivity.this.startService(service);
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Intent service = new Intent(MainActivity.this, DroidCastSService.class);
+        MainActivity.this.startService(service);
     }
 }
