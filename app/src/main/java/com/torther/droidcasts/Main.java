@@ -35,38 +35,33 @@ import java.util.Locale;
  */
 public class Main {
     private static final String sTAG = Main.class.getName();
-
     private static final String WIDTH = "width";
     private static final String HEIGHT = "height";
     private static final int SCREENSHOT_DELAY_MILLIS = 1000;
 
     private static int width = 0;
     private static int height = 0;
-
     private static int port = 53516;
 
     private static DisplayUtil displayUtil;
     private static Handler handler;
 
     public static void main(String[] args) {
+        // Get args and set port.
         resolveArgs(args);
 
-        AsyncHttpServer httpServer =
-                new AsyncHttpServer() {
-                    @Override
-                    protected boolean onRequest(
-                            AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
-                        return super.onRequest(request, response);
-                    }
-                };
+        AsyncHttpServer httpServer = new AsyncHttpServer() {
+            @Override
+            protected boolean onRequest(AsyncHttpServerRequest request, AsyncHttpServerResponse response) {
+                return super.onRequest(request, response);
+            }
+        };
 
         Looper.prepare();
-
         Looper looper = Looper.myLooper();
         System.out.println(">>> DroidCast main entry");
 
         handler = new Handler(looper);
-
         displayUtil = new DisplayUtil();
 
         AsyncServer server = new AsyncServer();
@@ -75,33 +70,31 @@ public class Main {
         httpServer.websocket(
                 "/src",
                 (webSocket, request) -> {
-
                     Pair<Integer, Integer> pair = getDimension();
                     displayUtil.setRotateListener(
                             rotate -> {
                                 System.out.println(">>> rotate to " + rotate);
-
                                 // delay for the new rotated screen
-                                handler.postDelayed(
-                                        () -> {
-                                            Pair<Integer, Integer> dimen = getDimension();
-                                            sendScreenshotData(webSocket, dimen.first, dimen.second);
+                                handler.postDelayed(() -> {
+                                            Pair<Integer, Integer> dimension = getDimension();
+                                            sendScreenshotData(webSocket, dimension.first, dimension.second);
                                         },
                                         SCREENSHOT_DELAY_MILLIS);
                             });
-
                     sendScreenshotData(webSocket, pair.first, pair.second);
                 });
 
         httpServer.listen(server, port);
-
         Looper.loop();
     }
 
+    /**
+     * @param args String[]
+     *             e.g ["--port=53516"]
+     */
     private static void resolveArgs(String[] args) {
         if (args.length > 0) {
             String[] params = args[0].split("=");
-
             if ("--port".equals(params[0])) {
                 try {
                     port = Integer.parseInt(params[1]);
@@ -113,12 +106,15 @@ public class Main {
         }
     }
 
+    /**
+     * @return Dimension Pair<>(width, height)
+     */
     @NonNull
     private static Pair<Integer, Integer> getDimension() {
         Point displaySize = displayUtil.getCurrentDisplaySize();
 
-        int width = 1080;
-        int height = 1920;
+        int width = 720;
+        int height = 1280;
         if (displaySize != null) {
             width = displaySize.x;
             height = displaySize.y;
@@ -126,6 +122,11 @@ public class Main {
         return new Pair<>(width, height);
     }
 
+    /**
+     * @param webSocket WebSocket
+     * @param width     width
+     * @param height    height
+     */
     private static void sendScreenshotData(WebSocket webSocket, int width, int height) {
         try {
             byte[] inBytes =
@@ -151,14 +152,18 @@ public class Main {
         }
     }
 
+    /**
+     * @param destWidth  width
+     * @param destHeight height
+     * @param resolver   Nullable
+     * @return buffer.array()
+     */
     private static byte[] getScreenImageInBytes(
-            int w,
-            int h,
+            int destWidth,
+            int destHeight,
             @Nullable ImageDimensionListener resolver)
             throws IOException {
 
-        int destWidth = w;
-        int destHeight = h;
         Bitmap bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight);
 
         if (bitmap == null) {
@@ -208,8 +213,8 @@ public class Main {
             resolver.onResolveDimension(width, height, screenRotation);
         }
 
-        ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
-        bitmap.copy(Bitmap.Config.RGB_565, true).copyPixelsToBuffer(buffer);
+        ByteBuffer buffer = ByteBuffer.allocate(width*height*2);
+        (bitmap.copy(Bitmap.Config.RGB_565, true)).copyPixelsToBuffer(buffer);
         bitmap.recycle();
 
         return buffer.array();
@@ -235,6 +240,7 @@ public class Main {
                 }
 
                 if (Main.width == 0 || Main.height == 0) {
+                    // dimension initialization
                     Point point = displayUtil.getCurrentDisplaySize();
 
                     if (point != null && point.x > 0 && point.y > 0) {
@@ -251,7 +257,7 @@ public class Main {
 
                 byte[] bytes = getScreenImageInBytes(destWidth, destHeight, null);
 
-                response.send("binary/octet-stream", bytes);
+                response.send("application/octet-stream", bytes);
             } catch (Exception e) {
                 e.printStackTrace();
                 response.code(500);

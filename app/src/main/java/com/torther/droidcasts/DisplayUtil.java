@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
         try {
             serviceManagerClass = Class.forName("android.os.ServiceManager");
 
-            Method getService = serviceManagerClass.getDeclaredMethod("getService", String.class);
+            @SuppressLint("DiscouragedPrivateApi") Method getService = serviceManagerClass.getDeclaredMethod("getService", String.class);
 
             // WindowManager
             Object ws = getService.invoke(null, Context.WINDOW_SERVICE);
@@ -57,6 +57,10 @@ import java.lang.reflect.Method;
         return null;
     }
 
+    /**
+     * Retrieve the current orientation of the primary screen.
+     * @see android.view.Display#DEFAULT_DISPLAY
+     */
     int getScreenRotation() {
         int rotation = 0;
 
