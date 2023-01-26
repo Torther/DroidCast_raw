@@ -213,7 +213,7 @@ public class Main {
             resolver.onResolveDimension(width, height, screenRotation);
         }
 
-        ByteBuffer buffer = ByteBuffer.allocate(bitmap.getByteCount());
+        ByteBuffer buffer = ByteBuffer.allocate(width*height*2);
         (bitmap.copy(Bitmap.Config.RGB_565, true)).copyPixelsToBuffer(buffer);
         bitmap.recycle();
 
