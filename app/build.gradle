@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'ink.mol.droidcast_raw'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "ink.mol.droidcast_raw"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        resConfigs "en_US"
+        resConfigs "hdpi"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        aidl = true
+    }
+}
+
+dependencies {
+    implementation 'com.koushikdutta.async:androidasync:3.1.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation 'com.android.support:support-annotations:28.0.0'
+}
+
+apply from: "./artifacts.gradle"
