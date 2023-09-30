@@ -35,7 +35,7 @@ public final class ScreenCaptorUtils {
             if (sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { //Upside Down Cake+
                 //Need to find new method to get screenshot
                 return null;
-            } else if (sdkInt >= Build.VERSION_CODES.Q) { //Quince Tart+
+            } else if (sdkInt >= Build.VERSION_CODES.S) { //Snow Cone+
                 // Create the DisplayCaptureArgs object using DisplayCaptureArgs$Builder.build()
                 Class<?> displayCaptureArgsClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs");
                 Class<?> displayCaptureArgsBuilderClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs$Builder");
@@ -57,7 +57,7 @@ public final class ScreenCaptorUtils {
                     bitmap = (Bitmap) asBitmap.invoke(hardwareBuffer);
                 }
 
-            } else if (sdkInt == Build.VERSION_CODES.P) { // Pie+
+            } else if (sdkInt >= Build.VERSION_CODES.P) { // Pie+
                 declaredMethod = surfaceControlClass.getDeclaredMethod(
                         METHOD_SCREENSHOT,
                         Rect.class,
