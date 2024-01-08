@@ -11,8 +11,8 @@ android {
         applicationId "ink.mol.droidcast_raw"
         minSdk 23
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
         resConfigs "en_US"
         resConfigs "hdpi"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -39,8 +39,8 @@ android {
 
 dependencies {
     implementation 'com.koushikdutta.async:androidasync:3.1.0'
-    implementation 'androidx.core:core-ktx:1.10.1'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
     implementation 'com.android.support:support-annotations:28.0.0'
 }
 

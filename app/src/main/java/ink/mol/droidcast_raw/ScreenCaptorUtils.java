@@ -2,7 +2,9 @@ package ink.mol.droidcast_raw;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
+import android.graphics.ColorSpace;
 import android.graphics.Rect;
+import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.IBinder;
 
@@ -10,16 +12,23 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import ink.mol.droidcast_raw.warpper.DisplayControl;
+
 @SuppressLint("PrivateApi")
 public final class ScreenCaptorUtils {
 
     private static final String METHOD_SCREENSHOT = "screenshot";
     private static final Class<?> surfaceControlClass;
     private static Method getBuiltInDisplayMethod;
+    private static final int sdkInt = Build.VERSION.SDK_INT;
 
     static {
         try {
-            surfaceControlClass = Class.forName("android.view.SurfaceControl");
+            if (sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                surfaceControlClass = Class.forName("android.window.ScreenCapture");
+            } else {
+                surfaceControlClass = Class.forName("android.view.SurfaceControl");
+            }
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -31,14 +40,17 @@ public final class ScreenCaptorUtils {
         try {
             Method declaredMethod;
 
-            int sdkInt = Build.VERSION.SDK_INT;
-            if (sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { //Upside Down Cake+
-                //Need to find new method to get screenshot
-                return null;
-            } else if (sdkInt >= Build.VERSION_CODES.S) { //Snow Cone+
+            if (sdkInt >= Build.VERSION_CODES.S) { //Snow Cone+
                 // Create the DisplayCaptureArgs object using DisplayCaptureArgs$Builder.build()
-                Class<?> displayCaptureArgsClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs");
-                Class<?> displayCaptureArgsBuilderClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs$Builder");
+                Class<?> displayCaptureArgsClass;
+                Class<?> displayCaptureArgsBuilderClass;
+                if (sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    displayCaptureArgsClass = Class.forName("android.window.ScreenCapture$DisplayCaptureArgs");
+                    displayCaptureArgsBuilderClass = Class.forName("android.window.ScreenCapture$DisplayCaptureArgs$Builder");
+                } else {
+                    displayCaptureArgsClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs");
+                    displayCaptureArgsBuilderClass = Class.forName("android.view.SurfaceControl$DisplayCaptureArgs$Builder");
+                }
                 @SuppressLint("BlockedPrivateApi") Method setSizeMethod = displayCaptureArgsBuilderClass.getDeclaredMethod("setSize", int.class, int.class);
                 @SuppressLint("BlockedPrivateApi") Method buildMethod = displayCaptureArgsBuilderClass.getDeclaredMethod("build");
 
@@ -51,10 +63,13 @@ public final class ScreenCaptorUtils {
                 Method captureDisplay = surfaceControlClass.getDeclaredMethod("captureDisplay", displayCaptureArgsClass);
                 Object hardwareBuffer = captureDisplay.invoke(null, args);
 
-                if (hardwareBuffer != null) {
-                    Class<?> hardwareBufferClass = Class.forName("android.view.SurfaceControl$ScreenshotHardwareBuffer");
-                    @SuppressLint("BlockedPrivateApi") Method asBitmap = hardwareBufferClass.getDeclaredMethod("asBitmap");
-                    bitmap = (Bitmap) asBitmap.invoke(hardwareBuffer);
+                Class<?> hardwareBufferClass = hardwareBuffer.getClass();
+                ColorSpace colorSpace = (ColorSpace) hardwareBufferClass.getDeclaredMethod("getColorSpace").invoke(hardwareBuffer);
+
+                try (HardwareBuffer buffer = (HardwareBuffer) hardwareBufferClass.getDeclaredMethod("getHardwareBuffer").invoke(hardwareBuffer)) {
+                    bitmap = Bitmap.wrapHardwareBuffer(buffer, colorSpace);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
             } else if (sdkInt >= Build.VERSION_CODES.P) { // Pie+
@@ -91,15 +106,21 @@ public final class ScreenCaptorUtils {
 
     public static IBinder getBuiltInDisplay() {
         try {
-            Method method = getGetBuiltInDisplayMethod();
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                // Default display 0
-                return (IBinder) method.invoke(null, 0);
+            if (sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                long[] displayIds = DisplayControl.getPhysicalDisplayIds();
+                if (displayIds != null) {
+                    for (long id : displayIds) {
+                        IBinder binder = DisplayControl.getPhysicalDisplayToken(id);
+                        if (binder != null) return binder;
+                    }
+                    return DisplayControl.getPhysicalDisplayToken(0);
+                }
             }
-            return (IBinder) method.invoke(null);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Method method = getGetBuiltInDisplayMethod();
+            return (IBinder) (sdkInt < Build.VERSION_CODES.Q ? method.invoke(null, 0) : method.invoke(null));
+        } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 }
