@@ -10,7 +10,6 @@ import com.koushikdutta.async.http.server.AsyncHttpServerRequest
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse
 import com.koushikdutta.async.http.server.HttpServerRequestCallback
 import java.io.ByteArrayOutputStream
-import java.lang.Exception
 
 class AnyRequestCallbackPreview : HttpServerRequestCallback {
     private var displayUtil: DisplayUtil? = DisplayUtil()
@@ -58,17 +57,17 @@ class AnyRequestCallbackPreview : HttpServerRequestCallback {
         destWidth: Int,
         destHeight: Int
     ): ByteArrayOutputStream {
-        var bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight)
+        var bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
         Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")
 
         when (displayUtil?.getScreenRotation()) {
-            1 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, -90f) }
-            2 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, 90f) }
-            3 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, 180f) }
+            1 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, -90f) }!!
+            2 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, 90f) }!!
+            3 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, 180f) }!!
         }
 
         stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
         bitmap.recycle()
 
         return stream

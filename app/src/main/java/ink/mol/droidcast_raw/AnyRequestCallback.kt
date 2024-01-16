@@ -9,7 +9,6 @@ import com.koushikdutta.async.http.Multimap
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse
 import com.koushikdutta.async.http.server.HttpServerRequestCallback
-import java.lang.Exception
 import java.nio.ByteBuffer
 
 class AnyRequestCallback : HttpServerRequestCallback {
@@ -59,17 +58,17 @@ class AnyRequestCallback : HttpServerRequestCallback {
         destWidth: Int,
         destHeight: Int
     ): ByteArray {
-        var bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight)
+        var bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
         Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")
 
         when (displayUtil?.getScreenRotation()) {
-            1 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, -90f) }!!
-            2 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, 90f) }!!
-            3 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(it, 180f) }!!
+            1 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, -90f) }!!
+            2 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, 90f) }!!
+            3 -> bitmap = bitmap.let { displayUtil?.rotateBitmap(bitmap!!, 180f) }!!
         }
 
         val buffer = ByteBuffer.allocate((destWidth.times(destHeight)) * 2)
-        bitmap.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
+        bitmap!!.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
         bitmap.recycle()
 
         return buffer.array()
