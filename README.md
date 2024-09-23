@@ -58,13 +58,19 @@ adb install DroidCast_raw-release-1.0.apk
 adb shell pm path ink.mol.droidcast_raw
 ```
 
-返回的 ```path:``` 后面的内容即为 ```CLASSPATH```
+返回的 ```package:``` 后面的内容即为 ```CLASSPATH=``` 后的内容
 
  - 通过 ```app_process``` 启动内部的图片处理服务进程
 
 ```shell
-adb shell $CLASSPATH app_process / ink.mol.droidcast_raw.Main (--port=8080)
+adb shell CLASSPATH=*** app_process / ink.mol.droidcast_raw.Main
 ```
+
+> ```***``` 为上一步获取的 ```package:``` 后面的内容
+
+> 如获取到的结果为 ```package:/data/app/~~nmfieV3qg8e0Mju_KptQRg==/ink.mol.droidcast_raw-II4YPHI93Nl0kjdPC4D6Vg==/base.apk```
+
+> 需要执行的命令就为 ```adb shell CLASSPATH=/data/app/~~nmfieV3qg8e0Mju_KptQRg==/ink.mol.droidcast_raw-II4YPHI93Nl0kjdPC4D6Vg==/base.apk app_process / ink.mol.droidcast_raw.Main```
 
  - 使用 ```adb forward``` 命令将本地（PC）socket 连接重定向到已连接的 Android 设备上
 
