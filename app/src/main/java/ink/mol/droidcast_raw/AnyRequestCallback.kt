@@ -39,9 +39,9 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val destWidth: Int = Main.getWidth()
             val destHeight: Int = Main.getHeight()
 
-            val bytes: ByteArray = getScreenImageInBytes(destWidth, destHeight)
+            val buffer: ByteBuffer = getScreenImageInByteBuffer(destWidth, destHeight)
 
-            response?.send("application/octet-stream", bytes)
+            response?.send("application/octet-stream", buffer)
         } catch (e: Exception) {
             e.printStackTrace()
             response?.code(500)
@@ -54,10 +54,10 @@ class AnyRequestCallback : HttpServerRequestCallback {
         }
     }
 
-    private fun getScreenImageInBytes(
+    private fun getScreenImageInByteBuffer(
         width: Int,
         height: Int
-    ): ByteArray {
+    ): ByteBuffer {
         var destWidth = width
         var destHeight = height
 
@@ -74,7 +74,8 @@ class AnyRequestCallback : HttpServerRequestCallback {
         val buffer = ByteBuffer.allocate((destWidth.times(destHeight)) * 2)
         bitmap!!.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
         bitmap.recycle()
+        buffer.flip()
 
-        return buffer.array()
+        return buffer
     }
 }
