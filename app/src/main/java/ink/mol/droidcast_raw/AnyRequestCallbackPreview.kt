@@ -13,7 +13,6 @@ import java.io.ByteArrayOutputStream
 
 class AnyRequestCallbackPreview : HttpServerRequestCallback {
     private var displayUtil: DisplayUtil? = DisplayUtil()
-    private var stream: ByteArrayOutputStream = ByteArrayOutputStream()
 
     override fun onRequest(
         request: AsyncHttpServerRequest?,
@@ -23,6 +22,8 @@ class AnyRequestCallbackPreview : HttpServerRequestCallback {
             val pairs: Multimap? = request?.query
             val width: String? = pairs?.getString("width")
             val height: String? = pairs?.getString("height")
+            val format: String = (pairs?.getString("format") ?: "webp").lowercase()
+            val quality: Int = pairs?.getString("quality")?.toIntOrNull() ?: 100
 
             if (!width.isNullOrEmpty() && !height.isNullOrEmpty() && width.isDigitsOnly() && height.isDigitsOnly()) {
                 Main.setWH(width.toInt(), height.toInt())
@@ -40,7 +41,8 @@ class AnyRequestCallbackPreview : HttpServerRequestCallback {
             val destWidth: Int = Main.getWidth()
             val destHeight: Int = Main.getHeight()
 
-            response?.send("image/png", getScreenImage(destWidth, destHeight).toByteArray())
+            val (ct, bytes) = getScreenImage(destWidth, destHeight, format, quality)
+            response?.send(ct, bytes)
         } catch (e: Exception) {
             e.printStackTrace()
             response?.code(500)
@@ -55,8 +57,10 @@ class AnyRequestCallbackPreview : HttpServerRequestCallback {
 
     private fun getScreenImage(
         width: Int,
-        height: Int
-    ): ByteArrayOutputStream {
+        height: Int,
+        format: String,
+        quality: Int,
+    ): Pair<String, ByteArray> {
         var destWidth = width
         var destHeight = height
 
@@ -67,13 +71,21 @@ class AnyRequestCallbackPreview : HttpServerRequestCallback {
             destHeight = tmp
         }
 
-        val bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
+        val bitmap: Bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight)!!
         Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")
 
-        stream = ByteArrayOutputStream()
-        bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        bitmap.recycle()
-
-        return stream
+        try {
+            if (format == "webp" && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val stream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSLESS, quality, stream)
+                return Pair("image/webp", stream.toByteArray())
+            } else {
+                val stream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.PNG, quality, stream)
+                return Pair("image/png", stream.toByteArray())
+            }
+        } finally {
+            bitmap.recycle()
+        }
     }
 }

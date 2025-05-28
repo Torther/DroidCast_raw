@@ -1,6 +1,6 @@
 package ink.mol.droidcast_raw
 
-import android.graphics.Bitmap
+import android.graphics.PixelFormat
 import android.graphics.Point
 import android.os.Build
 import android.util.Log
@@ -9,6 +9,7 @@ import com.koushikdutta.async.http.Multimap
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest
 import com.koushikdutta.async.http.server.AsyncHttpServerResponse
 import com.koushikdutta.async.http.server.HttpServerRequestCallback
+import ink.mol.droidcast_raw.ScreenCaptorUtils.lz4CompressBound
 import java.nio.ByteBuffer
 
 class AnyRequestCallback : HttpServerRequestCallback {
@@ -22,6 +23,7 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val pairs: Multimap? = request?.query
             val width: String? = pairs?.getString("width")
             val height: String? = pairs?.getString("height")
+            val compress: String? = pairs?.getString("compress")?.lowercase()
 
             if (!width.isNullOrEmpty() && !height.isNullOrEmpty() && width.isDigitsOnly() && height.isDigitsOnly()) {
                 Main.setWH(width.toInt(), height.toInt())
@@ -39,7 +41,7 @@ class AnyRequestCallback : HttpServerRequestCallback {
             val destWidth: Int = Main.getWidth()
             val destHeight: Int = Main.getHeight()
 
-            val buffer: ByteBuffer = getScreenImageInByteBuffer(destWidth, destHeight)
+            val buffer: ByteBuffer = getScreenImageInByteBuffer(destWidth, destHeight, compress)
 
             response?.send("application/octet-stream", buffer)
         } catch (e: Exception) {
@@ -56,7 +58,8 @@ class AnyRequestCallback : HttpServerRequestCallback {
 
     private fun getScreenImageInByteBuffer(
         width: Int,
-        height: Int
+        height: Int,
+        compress: String?
     ): ByteBuffer {
         var destWidth = width
         var destHeight = height
@@ -68,14 +71,28 @@ class AnyRequestCallback : HttpServerRequestCallback {
             destHeight = tmp
         }
 
-        val bitmap: Bitmap? = ScreenCaptorUtils.screenshot(destWidth, destHeight)
-        Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight")
+        val bitmap = ScreenCaptorUtils.screenshot(destWidth, destHeight, PixelFormat.RGB_565)!!
+        Log.i("DroidCast_raw_log", "Bitmap generated with resolution $destWidth:$destHeight config ${bitmap.config}")
 
-        val buffer = ByteBuffer.allocate((destWidth.times(destHeight)) * 2)
-        bitmap!!.copy(Bitmap.Config.RGB_565, false)?.copyPixelsToBuffer(buffer)
+        val buffer: ByteBuffer
+        if (compress == "lz4") {
+            val size = lz4CompressBound(destWidth * destHeight * 2)
+            buffer = ByteBuffer.allocateDirect(size)
+            ScreenCaptorUtils.copyBitmapToBufferLz4(bitmap, buffer)
+        } else {
+            val size = destWidth * destHeight * 2
+            buffer = ByteBuffer.allocateDirect(size)
+            ScreenCaptorUtils.copyBitmapToBuffer(bitmap, buffer)
+        }
         bitmap.recycle()
         buffer.flip()
 
         return buffer
+    }
+
+    companion object {
+        init {
+            NativeLibHelper.loadLibs()
+        }
     }
 }

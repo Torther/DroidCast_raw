@@ -1,0 +1,9 @@
+droidcast_raw {
+  global:
+    Java_ink_mol_droidcast_1raw_*;
+  local:
+    # Every symbol in this section will have "local" (that is, hidden)
+    # visibility. The wildcard * is used to indicate that all symbols not listed
+    # in the global section should be hidden.
+    *;
+};
