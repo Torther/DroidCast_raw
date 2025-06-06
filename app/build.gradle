@@ -16,6 +16,11 @@ android {
         resConfigs "en_US"
         resConfigs "hdpi"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags '-D__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__'
+            }
+        }
     }
 
     buildTypes {
@@ -34,6 +39,17 @@ android {
     }
     buildFeatures {
         aidl = true
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.22.1'
+        }
+    }
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging false
+        }
     }
 }
 
